@@ -1,0 +1,11 @@
+use_frameworks!
+
+target 'AKDownloadManager_Example' do
+  pod 'AKDownloadManager', :path => '../'
+
+  target 'AKDownloadManager_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end

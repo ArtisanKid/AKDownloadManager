@@ -1,0 +1,16 @@
+PODS:
+  - AKDownloadManager (0.1.0)
+
+DEPENDENCIES:
+  - AKDownloadManager (from `../`)
+
+EXTERNAL SOURCES:
+  AKDownloadManager:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  AKDownloadManager: ce24b2394b0021334991630546bde175f2433fa3
+
+PODFILE CHECKSUM: 7dc7576c9824ba9a842cc76ad2cf8ba43a4219b5
+
+COCOAPODS: 1.0.1

@@ -50,7 +50,7 @@
 #pragma mark- 私有方法
 - (NSMutableDictionary *)downloaderDicM {
     if (!_downloaderDicM) {
-        _downloaderDicM = NSMutableDictionary.dictionary;
+        _downloaderDicM = [NSMutableDictionary dictionary];
     }
     return _downloaderDicM;
 }
@@ -60,7 +60,7 @@
     self.queue.maxConcurrentOperationCount = 1;
     
     NSURLSessionConfiguration *configuration = nil;
-    self.sessionIdentifier = [NSString stringWithFormat:@"com.shijiebang.session.%@", NSStringFromClass(AKDownloadManager.class)];
+    self.sessionIdentifier = [NSString stringWithFormat:@"com.artisankid.session.%@", NSStringFromClass(AKDownloadManager.class)];
     configuration = [NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:self.sessionIdentifier];
     configuration.timeoutIntervalForRequest = 8.f;
     //configuration.timeoutIntervalForResource = 60.f;//设置timeoutIntervalForResource会导致频繁超时
@@ -68,7 +68,7 @@
     
     //backgroundSession不要设置discretionary=YES，不要设置discretionary=YES，不要设置discretionary=YES
     //因为系统会自动管理“大数据”传输，“大数据”没有给出明确定义，但是我们的离线包貌似已经认为是大数据了
-    //实际测试表明，discretionary = YES在 4G且慢速 的情况下，数据下载会直接被delay，延迟时间不确定，但是4G且网速正常的情况下，下载仍然正常开始（我日Apple开发NSURLSession的工程师...）
+    //实际测试表明，discretionary = YES在“4G且慢速”的情况下，数据下载会直接被delay，延迟时间不确定，但是4G且网速正常的情况下，下载仍然正常开始（我日Apple开发NSURLSession的工程师...）
     //如果不想做更多的提示，那么不要设置discretionary=YES！！！
     //http://stackoverflow.com/questions/27067728/nsurlsession-background-download-over-cellular-possible-in-ios-8
     configuration.discretionary = NO;
@@ -83,18 +83,18 @@
 - (void)startDownloadWithURL:(NSString *)url savePath:(NSString *)path progress:(void (^)(CGFloat progress))progress success:(void (^)(NSString *tmpFilePath))success failure:(void (^)(NSError *error))failure {
     [self.queue addOperation:[NSBlockOperation blockOperationWithBlock:^{
         if (!url.length) {
-            AKDMLog(@"文件url为空");
+            AKDownloadManagerLog(@"文件url为空");
             !failure ? :  failure(nil);
             return;
         }
         
         if (!path.length) {
-            AKDMLog(@"文件保存路径为空");
+            AKDownloadManagerLog(@"文件保存路径为空");
             !failure ? :  failure(nil);
             return;
         }
         
-        AKDMLog(@"准备下载URL:%@", url);
+        AKDownloadManagerLog(@"准备下载URL:%@", url);
         
         AKDownloader *downloader = self.downloaderDicM[url];
         if (!downloader) {
@@ -115,15 +115,15 @@
             downloader.task.taskDescription = url;
             self.downloaderDicM[url] = downloader;
         } else if (downloader.task.state == NSURLSessionTaskStateRunning) {
-            AKDMLog(@"TaskState:NSURLSessionTaskStateRunning");
+            AKDownloadManagerLog(@"下载任务状态:NSURLSessionTaskStateRunning");
             return;
         } else if (downloader.task.state == NSURLSessionTaskStateSuspended) {
-            AKDMLog(@"TaskState:NSURLSessionTaskStateSuspended");
+            AKDownloadManagerLog(@"下载任务状态:NSURLSessionTaskStateSuspended");
         } else if (downloader.task.state == NSURLSessionTaskStateCanceling) {
-            AKDMLog(@"TaskState:NSURLSessionTaskStateCanceling");
+            AKDownloadManagerLog(@"下载任务状态:NSURLSessionTaskStateCanceling");
             return;
         } else if (downloader.task.state == NSURLSessionTaskStateCompleted) {
-            AKDMLog(@"TaskState:NSURLSessionTaskStateCompleted");
+            AKDownloadManagerLog(@"下载任务状态:NSURLSessionTaskStateCompleted");
             return;
         }
         
@@ -156,9 +156,9 @@
  */
 - (void)URLSession:(NSURLSession *)session didBecomeInvalidWithError:(nullable NSError *)error {
     if(error) {
-        AKDMLog(@"发生了系统错误：%@", error);
+        AKDownloadManagerLog(@"发生了系统错误：%@", error);
     } else {
-        AKDMLog(@"手动取消了Session");
+        AKDownloadManagerLog(@"手动取消了Session");
     }
     
     [session.delegateQueue cancelAllOperations];
@@ -185,7 +185,7 @@
  * result in invoking the completion handler.
  */
 - (void)URLSessionDidFinishEventsForBackgroundURLSession:(NSURLSession *)session {
-    AKDMLog(@"全部package下载完成");
+    AKDownloadManagerLog(@"全部package下载完成");
     !self.backgroundURLSessionCompletionHandler ? : self.backgroundURLSessionCompletionHandler();
 }
 
@@ -229,11 +229,11 @@
  */
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(nullable NSError *)error {
     if (!error) {
-        AKDMLog(@"NSURLSessionTask正常完成");
+        AKDownloadManagerLog(@"NSURLSessionTask正常完成");
         return;
     }
     
-    AKDMLog(@"NSURLSessionTask错误 error：%@", error);
+    AKDownloadManagerLog(@"NSURLSessionTask错误 error：%@", error);
     //此处不能使用task.originalRequest来获取url，
     //因为如果下载的url一致，但是下载内容更改(服务器内容更改)后会发生不可逆转的错误
     //NSString *key = task.originalRequest.URL.absoluteString.sjb_md5;
@@ -253,7 +253,7 @@
             NSError *error = nil;
             BOOL result = [[NSFileManager defaultManager] removeItemAtPath:downloader.savePath error:&error];
             if(!result) {
-                AKDMLog(@"清理缓存的ResumeData错误 error：%@", error);
+                AKDownloadManagerLog(@"清理缓存的ResumeData错误 error：%@", error);
                 return;
             }
             
@@ -281,7 +281,7 @@
     NSHTTPURLResponse *response = (NSHTTPURLResponse *)downloadTask.response;
     if ([response isKindOfClass:NSHTTPURLResponse.class]) {
         if (response.statusCode >= 400) {
-            AKDMLog(@"ERROR: HTTP status code %@", @(response.statusCode));
+            AKDownloadManagerLog(@"ERROR: HTTP status code %@", @(response.statusCode));
             [self failure:key error:nil];
             return;
         }
@@ -296,7 +296,7 @@
     NSError *error = nil;
     [NSFileManager.defaultManager moveItemAtURL:location toURL:[NSURL fileURLWithPath:savePath] error:&error];
     if (error) {
-        AKDMLog(@"文件无法移动到指定路径:%@", error);
+        AKDownloadManagerLog(@"文件无法移动到指定路径:%@", error);
         [self failure:key error:error];
         return;
     }
@@ -306,7 +306,7 @@
 
 /* Sent periodically to notify the delegate of download progress. */
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
-    AKDMLog(@"bytesWritten:%@ totalBytesWritten:%@ totalBytesExpectedToWrite:%@", @(bytesWritten), @(totalBytesWritten), @(totalBytesExpectedToWrite));
+    AKDownloadManagerLog(@"bytesWritten:%@ totalBytesWritten:%@ totalBytesExpectedToWrite:%@", @(bytesWritten), @(totalBytesWritten), @(totalBytesExpectedToWrite));
     void (^progressBlock)(CGFloat progress) = self.downloaderDicM[downloadTask.originalRequest.URL.absoluteString].progressBlock;
     !progressBlock ? : progressBlock((CGFloat)totalBytesWritten / (CGFloat)totalBytesExpectedToWrite);
 }
@@ -317,7 +317,7 @@
  * data. 
  */
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didResumeAtOffset:(int64_t)fileOffset expectedTotalBytes:(int64_t)expectedTotalBytes {
-    AKDMLog(@"fileOffset:%@ expectedTotalBytes:%@", @(fileOffset), @(expectedTotalBytes));
+    AKDownloadManagerLog(@"fileOffset:%@ expectedTotalBytes:%@", @(fileOffset), @(expectedTotalBytes));
     void (^progressBlock)(CGFloat progress) = self.downloaderDicM[downloadTask.originalRequest.URL.absoluteString].progressBlock;
     !progressBlock ? : progressBlock((CGFloat)fileOffset / (CGFloat)expectedTotalBytes);
 }
